@@ -1,0 +1,24 @@
+{
+    "name": "Smolov Programme Tracker",
+    "short_name": "Smolov",
+    "description": "A Progressive Web App for tracking your Smolov squat programme",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#2c3e50",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "images/icon-192x192.svg",
+            "type": "image/svg+xml",
+            "sizes": "192x192",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "images/icon-512x512.svg",
+            "type": "image/svg+xml",
+            "sizes": "512x512",
+            "purpose": "any maskable"
+        }
+    ]
+}

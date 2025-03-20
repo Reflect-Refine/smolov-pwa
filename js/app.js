@@ -858,37 +858,37 @@ function switchPhase() {
         programmeSection.classList.add('hidden');
         
         // Show the setup section with only the current-max-display
-        // if (smolovData.maxSquat > 0) {
-        //     setupSection.classList.remove('hidden');
+        if (smolovData.maxSquat > 0) {
+            setupSection.classList.remove('hidden');
             
-        //     // Hide all children except the current-max-display
-        //     Array.from(setupSection.children).forEach(child => {
-        //         if (!child.classList.contains('current-max-display')) {
-        //             child.classList.add('hidden');
-        //         }
-        //     });
-        // }
+            // Hide all children except the current-max-display
+            Array.from(setupSection.children).forEach(child => {
+                if (!child.classList.contains('current-max-display')) {
+                    child.classList.add('hidden');
+                }
+            });
+        }
     } else {
         // For workout phases, show the programme section
         programmeSection.classList.remove('hidden');
         
         // Show the setup section with only the current-max-display
-        // if (smolovData.maxSquat > 0) {
-        //     setupSection.classList.remove('hidden');
+        if (smolovData.maxSquat > 0) {
+            setupSection.classList.remove('hidden');
             
-        //     // Hide all children except the current-max-display
-        //     Array.from(setupSection.children).forEach(child => {
-        //         if (!child.classList.contains('current-max-display')) {
-        //             child.classList.add('hidden');
-        //         }
-        //     });
-        // } else {
-        //     // If no 1RM set, show the full setup section
-        //     setupSection.classList.remove('hidden');
-        //     Array.from(setupSection.children).forEach(child => {
-        //         child.classList.remove('hidden');
-        //     });
-        // }
+            // Hide all children except the current-max-display
+            Array.from(setupSection.children).forEach(child => {
+                if (!child.classList.contains('current-max-display')) {
+                    child.classList.add('hidden');
+                }
+            });
+        } else {
+            // If no 1RM set, show the full setup section
+            setupSection.classList.remove('hidden');
+            Array.from(setupSection.children).forEach(child => {
+                child.classList.remove('hidden');
+            });
+        }
     }
 }
 

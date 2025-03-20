@@ -5,6 +5,10 @@ import {
   migrateFromLocalStorage
 } from './db.js';
 
+import {
+  initAnalyticsSection
+} from './login.js';
+
 // DOM Elements
 const programSummary = document.getElementById('program-summary');
 const historyList = document.getElementById('history-list');
@@ -498,6 +502,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const statsPhase = document.getElementById('stats-phase');
   if (statsPhase) {
     initStatsPage();
+    
+    // Initialize analytics section with login protection
+    const analyticsContainer = document.querySelector('.analytics-section');
+    if (analyticsContainer) {
+      // Replace the analytics section with the login-protected version
+      initAnalyticsSection(analyticsContainer);
+    }
   }
 });
 

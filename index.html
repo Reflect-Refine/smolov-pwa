@@ -176,6 +176,28 @@
                         <p>Download your workout data for backup or analysis.</p>
                         <button id="export-data" class="export-btn">Export to JSON</button>
                     </div>
+                    
+                    <div class="analytics-section">
+                        <h3>App Analytics</h3>
+                        <p>View installation and usage statistics for the app.</p>
+                        <div id="analytics-data" class="analytics-data">
+                            <div class="analytics-card">
+                                <h4>Installations</h4>
+                                <div id="installations-count">Loading...</div>
+                            </div>
+                            <div class="analytics-card">
+                                <h4>App Opens</h4>
+                                <div id="app-opens-count">Loading...</div>
+                            </div>
+                            <div class="analytics-card">
+                                <h4>Unique Users</h4>
+                                <div id="unique-users-count">Loading...</div>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="usage-chart"></canvas>
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>
@@ -191,14 +213,29 @@
     </div>
 
     <script src="js/db.js" type="module"></script>
+    <script src="js/login.js" type="module"></script>
     <script src="js/stats.js" type="module"></script>
+    <script src="js/analytics.js" type="module"></script>
     <script src="js/app.js" type="module"></script>
     <script>
         // Register service worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js')
-                .then(reg => {/* Service worker registered successfully */})
-                .catch(err => {/* Service worker registration failed */});
+                .then(reg => {
+                    console.log('Service worker registered successfully');
+                    
+                    // Listen for messages from the service worker
+                    navigator.serviceWorker.addEventListener('message', async (event) => {
+                        if (event.data && event.data.type === 'INSTALLATION_TRACKING') {
+                            // Import analytics module dynamically
+                            const analytics = await import('./js/analytics.js');
+                            analytics.trackInstallation();
+                        }
+                    });
+                })
+                .catch(err => {
+                    console.error('Service worker registration failed:', err);
+                });
         }
     </script>
 </body>

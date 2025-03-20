@@ -1,6 +1,6 @@
 // Service Worker for Smolov PWA
 
-const CACHE_NAME = 'smolov-pwa-v2';
+const CACHE_NAME = 'smolov-pwa-v3';
 const assets = [
     './',
     './index.html',
@@ -8,6 +8,7 @@ const assets = [
     './js/app.js',
     './js/db.js',
     './js/stats.js',
+    './js/analytics.js',
     './manifest.json',
     './images/icon-192x192.svg',
     './images/icon-512x512.svg',
@@ -22,6 +23,16 @@ self.addEventListener('install', event => {
                 return cache.addAll(assets);
             })
             .then(() => self.skipWaiting())
+            .then(() => {
+                // Send message to client to track installation
+                self.clients.matchAll().then(clients => {
+                    clients.forEach(client => {
+                        client.postMessage({
+                            type: 'INSTALLATION_TRACKING'
+                        });
+                    });
+                });
+            })
     );
 });
 

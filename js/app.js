@@ -6,6 +6,12 @@ import {
   getCurrentUser
 } from './db.js';
 
+import {
+  trackAppOpen,
+  trackFeatureUsage,
+  getAnalyticsData
+} from './analytics.js';
+
 // Function to round to nearest 0.25kg
 function roundToNearestWeight(weight) {
     // Rounds to nearest 0.25kg
@@ -226,6 +232,9 @@ async function initApp() {
     // Load data from local storage and IndexedDB
     await loadFromLocalStorage();
     
+    // Track app open
+    trackAppOpen();
+    
     // If we have data, show the programme
     if (smolovData.maxSquat > 0) {
         maxSquatInput.value = smolovData.maxSquat;
@@ -242,6 +251,9 @@ async function initApp() {
         // If no data, show the setup section
         setupSection.classList.remove('hidden');
     }
+    
+    // Initialize analytics display if we're on the stats page
+    initAnalyticsDisplay();
 }
 
 // Update the current 1RM display
@@ -852,10 +864,16 @@ function switchPhase() {
     smolovData.currentPhase = phase;
     saveToLocalStorage();
     
+    // Track feature usage
+    trackFeatureUsage('view_phase', { phase });
+    
     // Show/hide sections based on the selected phase
     if (phase === 'stats') {
         // For stats view, hide the programme section
         programmeSection.classList.add('hidden');
+        
+        // Initialize analytics display
+        initAnalyticsDisplay();
         
         // Show the setup section with only the current-max-display
         // if (smolovData.maxSquat > 0) {
@@ -973,6 +991,99 @@ resetBtn.addEventListener('click', () => {
     }
 });
 footer.appendChild(resetBtn);
+
+// Initialize analytics display
+async function initAnalyticsDisplay() {
+    // Check if we're on the stats page and the analytics elements exist
+    const analyticsSection = document.querySelector('.analytics-section');
+    if (!analyticsSection) return;
+    
+    try {
+        // Get analytics data
+        const analyticsData = await getAnalyticsData();
+        
+        if (!analyticsData) {
+            console.error('Failed to get analytics data');
+            return;
+        }
+        
+        // Update installations count
+        const installationsCount = document.getElementById('installations-count');
+        if (installationsCount) {
+            installationsCount.textContent = analyticsData.totalInstallations || 0;
+        }
+        
+        // Update app opens count
+        const appOpensCount = document.getElementById('app-opens-count');
+        if (appOpensCount) {
+            appOpensCount.textContent = analyticsData.totalAppOpens || 0;
+        }
+        
+        // Update unique users count
+        const uniqueUsersCount = document.getElementById('unique-users-count');
+        if (uniqueUsersCount) {
+            uniqueUsersCount.textContent = analyticsData.uniqueUsers || 0;
+        }
+        
+        // Create usage chart if Chart.js is available
+        const usageChartCanvas = document.getElementById('usage-chart');
+        if (usageChartCanvas && typeof Chart !== 'undefined') {
+            // Prepare data for the chart
+            const appOpensByDate = analyticsData.appOpensByDate || {};
+            const labels = Object.keys(appOpensByDate).sort();
+            const values = labels.map(date => appOpensByDate[date]);
+            
+            // Create chart
+            new Chart(usageChartCanvas, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'App Opens',
+                        data: values,
+                        borderColor: '#1a73e8',
+                        backgroundColor: 'rgba(26, 115, 232, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'App Usage Over Time'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of App Opens'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        }
+                    }
+                }
+            });
+        } else if (usageChartCanvas) {
+            // Load Chart.js dynamically if not available
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+            script.onload = () => initAnalyticsDisplay(); // Retry after loading
+            document.head.appendChild(script);
+        }
+    } catch (error) {
+        console.error('Error initializing analytics display:', error);
+    }
+}
 
 // Check if a workout is available (previous workouts completed)
 function checkIfWorkoutIsAvailable(workoutId) {

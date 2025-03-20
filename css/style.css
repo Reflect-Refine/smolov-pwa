@@ -603,21 +603,6 @@ footer button:hover {
     display: none;
 }
 
-.reset-btn.hidden {
-    display: none;
-}
-
-#setup-section {
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
-}
-
-#setup-section.visible {
-    visibility: visible;
-    opacity: 1;
-}
-
 
 /* Styling for week headers in base and intense cycles */
 #base-phase h2, #intense-phase h2, #stats-phase h2 {

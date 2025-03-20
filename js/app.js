@@ -240,7 +240,7 @@ async function initApp() {
         showProgramme();
     } else {
         // If no data, show the setup section
-        setupSection.classList.add('hidden');
+        setupSection.classList.remove('hidden');
     }
 }
 
@@ -349,7 +349,6 @@ async function calculateProgramme() {
     
     if (!maxSquat || maxSquat <= 0) {
         alert('Please enter a valid 1RM squat weight.');
-        programmeSection.classList.add('hidden');
         return;
     }
     
@@ -374,9 +373,6 @@ async function calculateProgramme() {
         maxSquat: smolovData.maxSquat
     });
     
-    // Show programme section only after valid maxSquat is set
-    programmeSection.classList.remove('hidden');
-
     showProgramme();
 }
 
@@ -898,13 +894,6 @@ function switchPhase() {
 
 // Show the programme
 function showProgramme() {
-    // Only show programme if maxSquat is set
-    if (!smolovData.maxSquat || smolovData.maxSquat <= 0) {
-        programmeSection.classList.add('hidden');
-        setupSection.classList.remove('hidden');
-        return;
-    }
-
     // Hide the setup section
     setupSection.classList.add('hidden');
     
@@ -912,7 +901,9 @@ function showProgramme() {
     programmeSection.classList.remove('hidden');
     
     // Make sure the current 1RM display is visible if we have a 1RM
-    updateCurrentMaxDisplay();    
+    if (smolovData.maxSquat > 0) {
+        updateCurrentMaxDisplay();
+    }
     
     // Set active phase
     phaseButtons.forEach(btn => {
@@ -921,7 +912,6 @@ function showProgramme() {
             btn.classList.add('active');
         }
     });
-    
     
     phaseContents.forEach(content => {
         content.classList.remove('active');
@@ -949,15 +939,6 @@ function showProgramme() {
             }
         }
     });
-
-    const resetBtn = document.getElementById('reset-btn');
-    if (resetBtn) {
-        if (smolovData.maxSquat > 0) {
-            resetBtn.classList.remove('hidden');
-        } else {
-            resetBtn.classList.add('hidden');
-        }
-    }
 }
 
 // Reset app data
@@ -983,14 +964,15 @@ async function resetApp() {
 }
 
 // Add reset button at the bottom
-const resetBtn = document.getElementById('reset-btn');
-    if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-            if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
-                resetApp();
-            }
-        });
+const footer = document.querySelector('footer');
+const resetBtn = document.createElement('button');
+resetBtn.textContent = 'Reset Programme';
+resetBtn.addEventListener('click', () => {
+    if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
+        resetApp();
     }
+});
+footer.appendChild(resetBtn);
 
 // Check if a workout is available (previous workouts completed)
 function checkIfWorkoutIsAvailable(workoutId) {

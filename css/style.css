@@ -43,6 +43,30 @@ h1, h2, h3, h4 {
     line-height: 1.5;
 }
 
+/* Current 1RM display styling */
+#current-1rm-section {
+    margin-bottom: 1.5rem;
+}
+
+
+.current-max-display h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+.current-max-display p {
+    color: var(--gray-dark);
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.current-max-display .warning-text {
+    color: var(--error-color);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
 /* Set status coloring */
 .set-history {
     margin-top: 1rem;
@@ -134,10 +158,53 @@ header {
     text-align: center;
 }
 
-h1 {
+.header-top {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     margin-bottom: 0.5rem;
+    position: relative;
+}
+
+h1 {
+    margin-bottom: 0;
     font-weight: 700;
     font-size: 2rem;
+}
+
+#refresh-btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: transparent;
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: none;
+    transition: background-color 0.2s ease;
+}
+
+#refresh-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-50%) scale(1.1);
+}
+
+#refresh-btn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+#refresh-btn svg {
+    transition: transform 0.5s ease;
+}
+
+#refresh-btn.rotating svg {
+    transform: rotate(360deg);
 }
 
 .phase-selector {
@@ -460,6 +527,18 @@ footer {
     box-shadow: var(--shadow-medium);
 }
 
+.log-workout-btn.disabled {
+    background-color: var(--gray-medium);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.log-workout-btn.disabled:hover {
+    background-color: var(--gray-medium);
+    transform: none;
+    box-shadow: var(--shadow-small);
+}
+
 /* Save workout button styling */
 #save-workout {
     background-color: var(--success-color);
@@ -522,6 +601,21 @@ footer button:hover {
 
 .install-notice.hidden {
     display: none;
+}
+
+.reset-btn.hidden {
+    display: none;
+}
+
+#setup-section {
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+#setup-section.visible {
+    visibility: visible;
+    opacity: 1;
 }
 
 

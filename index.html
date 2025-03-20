@@ -18,7 +18,14 @@
             <button class="close-notice" aria-label="Close notice">×</button>
         </div>           
         <header>
-            <h1>Smolov Programme</h1>
+            <div class="header-top">
+                <h1>Smolov Programme</h1>
+                <button id="refresh-btn" title="Refresh App">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                    </svg>
+                </button>
+            </div>
             <div class="phase-selector">
                 <button data-phase="intro" class="active">Intro</button>
                 <button data-phase="base">Base Mesocycle</button>
@@ -27,6 +34,15 @@
                 <button data-phase="stats">Statistics</button>
             </div>
         </header>
+        
+        <!-- Current 1RM Display Section - Will be shown when 1RM is set -->
+        <section id="current-1rm-section" class="hidden">
+            <div class="current-max-display">
+                <h3>Current 1RM: <span id="current-1rm-value">0</span> kg</h3>
+                <p>To change your 1RM, click the "Reset Programme" button at the bottom of the page.</p>
+                <p class="warning-text">Note: Changing your 1RM will reset your progress.</p>
+            </div>
+        </section>
         
         <main>
             <section id="setup-section">
@@ -171,6 +187,7 @@
                 <p>Smolov Programme Tracker - A PWA for strength athletes</p>
                 <h5>Disclaimer</h5>
                 <p><small>This app is for educational purposes only. The author is not responsible for any injuries or damages caused by the use of this app. Use at your own risk. This app is for experienced lifters only. Please consult a professional before starting this programme. This app is based on the Smolov squat programme. It is a simplified version of the original programme. It is not affiliated with the original programme or its creators. Found a bug? <a href="mailto:support@rnr.design">Report an issue</a></small></p>
+                <button id="reset-btn" class="reset-btn hidden">Reset Programme</button>
             </div>
         </footer>
     </div>

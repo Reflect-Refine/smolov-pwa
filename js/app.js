@@ -214,6 +214,9 @@ function checkStorageWarning() {
 async function initApp() {
     // App initialization
     
+    // Hide setup section initially to prevent flash
+    setupSection.classList.add('hidden');
+    
     // Check if running from file and show warning accordingly
     checkStorageWarning();
     
@@ -227,11 +230,35 @@ async function initApp() {
     if (smolovData.maxSquat > 0) {
         maxSquatInput.value = smolovData.maxSquat;
         
+        // Update the 1RM display in the dedicated section
+        updateCurrentMaxDisplay();
+        
         // Regenerate the program to ensure all workout cards are created
         generateProgramme();
         
         // Show the programme
         showProgramme();
+    } else {
+        // If no data, show the setup section
+        setupSection.classList.add('hidden');
+    }
+}
+
+// Update the current 1RM display
+function updateCurrentMaxDisplay() {
+    // Get the current 1RM section and value element
+    const currentMaxSection = document.getElementById('current-1rm-section');
+    const currentMaxValue = document.getElementById('current-1rm-value');
+    
+    if (smolovData.maxSquat > 0) {
+        // Update the value
+        currentMaxValue.textContent = smolovData.maxSquat;
+        
+        // Show the section
+        currentMaxSection.classList.remove('hidden');
+    } else {
+        // Hide the section if no 1RM is set
+        currentMaxSection.classList.add('hidden');
     }
 }
 
@@ -322,6 +349,7 @@ async function calculateProgramme() {
     
     if (!maxSquat || maxSquat <= 0) {
         alert('Please enter a valid 1RM squat weight.');
+        programmeSection.classList.add('hidden');
         return;
     }
     
@@ -333,6 +361,9 @@ async function calculateProgramme() {
     // Make sure workout containers exist
     createWorkoutContainers();
     
+    // Update the 1RM display
+    updateCurrentMaxDisplay();
+    
     generateProgramme();
     saveToLocalStorage();
     
@@ -343,6 +374,9 @@ async function calculateProgramme() {
         maxSquat: smolovData.maxSquat
     });
     
+    // Show programme section only after valid maxSquat is set
+    programmeSection.classList.remove('hidden');
+
     showProgramme();
 }
 
@@ -552,41 +586,57 @@ function generateIntensePhase() {
                         testWeight = roundToNearestWeight(rawWeight);
                     }
                     
-                    const workoutCard = document.createElement('div');
-                    workoutCard.className = 'workout-card';
-                    workoutCard.dataset.id = `intense-w${week}-${day}`;
+                    // Use createWorkoutCard for testing week
+                    const workoutCard = createWorkoutCard({
+                        day: day.charAt(0).toUpperCase() + day.slice(1),
+                        phase: 'intense',
+                        week,
+                        sets: 1, // Just one set for testing
+                        reps: 1, // Just one rep for testing
+                        weight: testWeight,
+                        id: `intense-w${week}-${day}`,
+                        isTest: true // Flag to indicate this is a test workout
+                    });
                     
-                    workoutCard.innerHTML = `
-                        <h4>${day.charAt(0).toUpperCase() + day.slice(1)}</h4>
-                        <p>New 1RM Test: ${testWeight} kg</p>
-                        <button class="log-workout-btn" data-id="${`intense-w${week}-${day}`}">
-                            Log Workout
-                        </button>
-                    `;
+                    // Replace the default text with test-specific text
+                    const weightText = workoutCard.querySelector('p');
+                    if (weightText) {
+                        weightText.textContent = `New 1RM Test: ${testWeight} kg`;
+                    }
                     
                     weekContainer.appendChild(workoutCard);
-                    // No return here so all days are processed
                 } else {
-                    // Regular workout weeks
-                    const workoutCard = document.createElement('div');
-                    workoutCard.className = 'workout-card';
-                    workoutCard.dataset.id = `intense-w${week}-${day}`;
-                    
+                    // Regular workout weeks with multiple set/rep schemes
                     const weight = roundToNearestWeight(smolovData.maxSquat * workout.percent);
                     
-                    let setsRepsHtml = '<ul>';
-                    workout.setReps.forEach(([sets, reps]) => {
-                        setsRepsHtml += `<li>${sets} sets × ${reps} reps @ ${weight} kg</li>`;
-                    });
-                    setsRepsHtml += '</ul>';
+                    // Calculate total sets for the workout (sum of all set schemes)
+                    const totalSets = workout.setReps.reduce((sum, [sets, reps]) => sum + sets, 0);
                     
-                    workoutCard.innerHTML = `
-                        <h4>${day.charAt(0).toUpperCase() + day.slice(1)}</h4>
-                        ${setsRepsHtml}
-                        <button class="log-workout-btn" data-id="${`intense-w${week}-${day}`}">
-                            Log Workout
-                        </button>
-                    `;
+                    // Use the first set/rep scheme for the card creation
+                    const firstScheme = workout.setReps[0];
+                    
+                    // Create the workout card
+                    const workoutCard = createWorkoutCard({
+                        day: day.charAt(0).toUpperCase() + day.slice(1),
+                        phase: 'intense',
+                        week,
+                        sets: totalSets, // Total sets across all schemes
+                        reps: firstScheme[1], // Use reps from first scheme
+                        weight,
+                        id: `intense-w${week}-${day}`
+                    });
+                    
+                    // Replace the default text with the detailed set/rep schemes
+                    const weightText = workoutCard.querySelector('p');
+                    if (weightText) {
+                        let setsRepsHtml = '<ul>';
+                        workout.setReps.forEach(([sets, reps]) => {
+                            setsRepsHtml += `<li>${sets} sets × ${reps} reps @ ${weight} kg</li>`;
+                        });
+                        setsRepsHtml += '</ul>';
+                        
+                        weightText.outerHTML = setsRepsHtml;
+                    }
                     
                     weekContainer.appendChild(workoutCard);
                 }
@@ -609,12 +659,17 @@ function createWorkoutCard(workout) {
         workoutCard.classList.add('completed');
     }
     
+    // Check if this workout is available (previous day completed)
+    const isAvailable = checkIfWorkoutIsAvailable(id);
+    
     workoutCard.innerHTML = `
         <h4>${day}</h4>
         <p>${sets} sets × ${reps} reps @ ${weight} kg</p>
         ${isCompleted ? 
             '<p class="set-complete">✓ Completed</p>' : 
-            `<button class="log-workout-btn" data-id="${id}">Log Workout</button>`
+            isAvailable ?
+                `<button class="log-workout-btn" data-id="${id}">Log Workout</button>` :
+                `<button class="log-workout-btn disabled" disabled title="Complete previous workouts first">Log Workout</button>`
         }
     `;
     
@@ -801,17 +856,63 @@ function switchPhase() {
     smolovData.currentPhase = phase;
     saveToLocalStorage();
     
-    // Make sure programme section is visible when switching to workout phases
-    if (phase !== 'stats') {
-        setupSection.classList.add('hidden');
+    // Show/hide sections based on the selected phase
+    if (phase === 'stats') {
+        // For stats view, hide the programme section
+        programmeSection.classList.add('hidden');
+        
+        // Show the setup section with only the current-max-display
+        // if (smolovData.maxSquat > 0) {
+        //     setupSection.classList.remove('hidden');
+            
+        //     // Hide all children except the current-max-display
+        //     Array.from(setupSection.children).forEach(child => {
+        //         if (!child.classList.contains('current-max-display')) {
+        //             child.classList.add('hidden');
+        //         }
+        //     });
+        // }
+    } else {
+        // For workout phases, show the programme section
         programmeSection.classList.remove('hidden');
+        
+        // Show the setup section with only the current-max-display
+        // if (smolovData.maxSquat > 0) {
+        //     setupSection.classList.remove('hidden');
+            
+        //     // Hide all children except the current-max-display
+        //     Array.from(setupSection.children).forEach(child => {
+        //         if (!child.classList.contains('current-max-display')) {
+        //             child.classList.add('hidden');
+        //         }
+        //     });
+        // } else {
+        //     // If no 1RM set, show the full setup section
+        //     setupSection.classList.remove('hidden');
+        //     Array.from(setupSection.children).forEach(child => {
+        //         child.classList.remove('hidden');
+        //     });
+        // }
     }
 }
 
 // Show the programme
 function showProgramme() {
+    // Only show programme if maxSquat is set
+    if (!smolovData.maxSquat || smolovData.maxSquat <= 0) {
+        programmeSection.classList.add('hidden');
+        setupSection.classList.remove('hidden');
+        return;
+    }
+
+    // Hide the setup section
     setupSection.classList.add('hidden');
+    
+    // Show the programme section
     programmeSection.classList.remove('hidden');
+    
+    // Make sure the current 1RM display is visible if we have a 1RM
+    updateCurrentMaxDisplay();    
     
     // Set active phase
     phaseButtons.forEach(btn => {
@@ -820,6 +921,7 @@ function showProgramme() {
             btn.classList.add('active');
         }
     });
+    
     
     phaseContents.forEach(content => {
         content.classList.remove('active');
@@ -847,6 +949,15 @@ function showProgramme() {
             }
         }
     });
+
+    const resetBtn = document.getElementById('reset-btn');
+    if (resetBtn) {
+        if (smolovData.maxSquat > 0) {
+            resetBtn.classList.remove('hidden');
+        } else {
+            resetBtn.classList.add('hidden');
+        }
+    }
 }
 
 // Reset app data
@@ -872,18 +983,107 @@ async function resetApp() {
 }
 
 // Add reset button at the bottom
-const footer = document.querySelector('footer');
-const resetBtn = document.createElement('button');
-resetBtn.textContent = 'Reset Programme';
-resetBtn.addEventListener('click', () => {
-    if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
-        resetApp();
+const resetBtn = document.getElementById('reset-btn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
+                resetApp();
+            }
+        });
     }
-});
-footer.appendChild(resetBtn);
 
-// Add this near the top of your app.js file
+// Check if a workout is available (previous workouts completed)
+function checkIfWorkoutIsAvailable(workoutId) {
+    // First workout is always available
+    if (workoutId === 'intro-w1-monday') {
+        return true;
+    }
+    
+    // Parse the workout ID
+    const idParts = workoutId.split('-');
+    const phase = idParts[0];
+    const weekPart = idParts[1]; // e.g., "w1"
+    const day = idParts[2];
+    
+    // Extract week number
+    const week = parseInt(weekPart.substring(1));
+    
+    // Get the previous workout ID based on the current one
+    let previousWorkoutId;
+    
+    // For intro phase
+    if (phase === 'intro') {
+        if (day === 'monday') {
+            if (week === 1) {
+                // First workout, no previous
+                return true;
+            } else {
+                // Previous week's Friday
+                previousWorkoutId = `intro-w${week-1}-friday`;
+            }
+        } else if (day === 'wednesday') {
+            // Monday of the same week
+            previousWorkoutId = `intro-w${week}-monday`;
+        } else if (day === 'friday') {
+            // Wednesday of the same week
+            previousWorkoutId = `intro-w${week}-wednesday`;
+        }
+    }
+    // For base phase
+    else if (phase === 'base') {
+        if (day === 'monday') {
+            if (week === 1) {
+                // First base workout should check the last intro workout
+                previousWorkoutId = 'intro-w2-friday';
+            } else {
+                // Previous week's Saturday
+                previousWorkoutId = `base-w${week-1}-saturday`;
+            }
+        } else if (day === 'wednesday') {
+            // Monday of the same week
+            previousWorkoutId = `base-w${week}-monday`;
+        } else if (day === 'friday') {
+            // Wednesday of the same week
+            previousWorkoutId = `base-w${week}-wednesday`;
+        } else if (day === 'saturday') {
+            // Friday of the same week
+            previousWorkoutId = `base-w${week}-friday`;
+        }
+    }
+    // For intense phase
+    else if (phase === 'intense') {
+        if (day === 'monday') {
+            if (week === 1) {
+                // First intense workout should check the last base workout
+                previousWorkoutId = 'base-w4-saturday';
+            } else {
+                // Previous week's Saturday
+                previousWorkoutId = `intense-w${week-1}-saturday`;
+            }
+        } else if (day === 'wednesday') {
+            // Monday of the same week
+            previousWorkoutId = `intense-w${week}-monday`;
+        } else if (day === 'friday') {
+            // Wednesday of the same week
+            previousWorkoutId = `intense-w${week}-wednesday`;
+        } else if (day === 'saturday') {
+            // Friday of the same week
+            previousWorkoutId = `intense-w${week}-friday`;
+        }
+    }
+    
+    // If we couldn't determine a previous workout, allow it
+    if (!previousWorkoutId) {
+        return true;
+    }
+    
+    // Check if the previous workout is completed
+    return smolovData.completedWorkouts.some(w => w.id === previousWorkoutId);
+}
+
+// Add event listeners for UI elements
 document.addEventListener('DOMContentLoaded', () => {
+    // Install notice handling
     const installNotice = document.getElementById('installNotice');
     const closeButton = installNotice.querySelector('.close-notice');
 
@@ -897,4 +1097,32 @@ document.addEventListener('DOMContentLoaded', () => {
         // Save the dismissal in localStorage
         localStorage.setItem('installNoticeDismissed', 'true');
     });
+    
+    // Refresh button handling
+    const refreshBtn = document.getElementById('refresh-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            // Add rotating animation
+            refreshBtn.classList.add('rotating');
+            
+            // Show a message to indicate refresh is happening
+            const refreshMessage = document.createElement('div');
+            refreshMessage.textContent = 'Refreshing...';
+            refreshMessage.style.position = 'fixed';
+            refreshMessage.style.top = '50%';
+            refreshMessage.style.left = '50%';
+            refreshMessage.style.transform = 'translate(-50%, -50%)';
+            refreshMessage.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            refreshMessage.style.color = 'white';
+            refreshMessage.style.padding = '1rem 2rem';
+            refreshMessage.style.borderRadius = '4px';
+            refreshMessage.style.zIndex = '9999';
+            document.body.appendChild(refreshMessage);
+            
+            // Reload the page after a short delay to show the animation
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        });
+    }
 });

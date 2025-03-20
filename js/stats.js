@@ -194,10 +194,12 @@ function renderWorkoutHistory(workouts, filter = 'all', order = 'newest') {
       day: 'numeric' 
     });
     
-    // Parse workout ID to get day
+    // Parse workout ID to get day and week
     const idParts = workout.id.split('-');
     const day = idParts[2] ? idParts[2].charAt(0).toUpperCase() + idParts[2].slice(1) : 'Unknown';
     const week = idParts[1] ? idParts[1].replace('w', 'Week ') : '';
+    const phase = workout.phase;
+    const weekNum = workout.week || (idParts[1] ? idParts[1].replace('w', '') : '');
     
     // Create workout history item
     const historyItem = document.createElement('div');
@@ -212,8 +214,8 @@ function renderWorkoutHistory(workouts, filter = 'all', order = 'newest') {
     dateElement.textContent = formattedDate;
     
     const phaseElement = document.createElement('div');
-    phaseElement.className = `history-item-phase ${workout.phase}`;
-    phaseElement.textContent = workout.phase.charAt(0).toUpperCase() + workout.phase.slice(1);
+    phaseElement.className = `history-item-phase ${phase}`;
+    phaseElement.textContent = phase.charAt(0).toUpperCase() + phase.slice(1);
     
     header.appendChild(dateElement);
     header.appendChild(phaseElement);
@@ -221,9 +223,30 @@ function renderWorkoutHistory(workouts, filter = 'all', order = 'newest') {
     // Create workout details
     const details = document.createElement('div');
     details.className = 'history-item-details';
+    
+    // Try to determine sets, reps, and weight from the workout ID
+    let workoutDetails = '';
+    
+    // For intro and base phases, we can extract from the workout object
+    if (phase === 'intro' || phase === 'base') {
+      // Find the corresponding workout card in the DOM to get sets/reps/weight
+      const workoutCard = document.querySelector(`.workout-card[data-id="${workout.id}"]`);
+      if (workoutCard) {
+        const workoutText = workoutCard.querySelector('p')?.textContent;
+        if (workoutText) {
+          workoutDetails = workoutText;
+        }
+      }
+    }
+    
+    // If we couldn't get details from the DOM, show a generic message with the max squat
+    if (!workoutDetails) {
+      workoutDetails = `Max Squat: ${workout.maxSquat} kg`;
+    }
+    
     details.innerHTML = `
       <h4>${day} - ${week}</h4>
-      <p>Max Squat: ${workout.maxSquat} kg</p>
+      <p>${workoutDetails}</p>
     `;
     
     // Create set data display

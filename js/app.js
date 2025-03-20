@@ -769,11 +769,26 @@ function resetApp() {
 const footer = document.querySelector('footer');
 const resetBtn = document.createElement('button');
 resetBtn.textContent = 'Reset Programme';
-resetBtn.style.marginTop = '20px';
-resetBtn.style.backgroundColor = '#e74c3c';
 resetBtn.addEventListener('click', () => {
     if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
         resetApp();
     }
 });
 footer.appendChild(resetBtn);
+
+// Add this near the top of your app.js file
+document.addEventListener('DOMContentLoaded', () => {
+    const installNotice = document.getElementById('installNotice');
+    const closeButton = installNotice.querySelector('.close-notice');
+
+    // Check if the notice was previously dismissed
+    if (localStorage.getItem('installNoticeDismissed')) {
+        installNotice.classList.add('hidden');
+    }
+
+    closeButton.addEventListener('click', () => {
+        installNotice.classList.add('hidden');
+        // Save the dismissal in localStorage
+        localStorage.setItem('installNoticeDismissed', 'true');
+    });
+});

@@ -135,7 +135,7 @@ header {
 }
 
 h1 {
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.5rem;
     font-weight: 700;
     font-size: 2rem;
 }
@@ -161,7 +161,7 @@ h1 {
 
 .phase-selector button.active,
 .phase-selector button:hover {
-    background-color: rgba(255, 255, 255, 0.4);
+    background-color: var(--primary-dark);
     transform: translateY(-2px);
 }
 
@@ -494,8 +494,36 @@ footer button {
 }
 
 footer button:hover {
-    background-color: #d73125;
+    background-color: var(--dark-color);
 }
+
+.install-notice {
+    position: relative;
+    background-color: var(--dark-color);
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    color: var(--light-color);
+}
+
+.close-notice {
+    position: absolute;
+    right: 0.5rem;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    background-color: var(--light-color);
+    color: var(--dark-color);    
+}
+
+.close-notice:hover {
+    color: #333;
+}
+
+.install-notice.hidden {
+    display: none;
+}
+
 
 /* Styling for week headers in base and intense cycles */
 #base-phase h2, #intense-phase h2 {

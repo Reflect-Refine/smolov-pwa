@@ -1,6 +1,7 @@
 // Analytics handling for Smolov PWA
 
 import { openDatabase, getCurrentUser, saveStatistic, getStatisticsByType } from './db.js';
+import { isLoggedIn } from './login.js';
 
 // Analytics event types
 const ANALYTICS_EVENTS = {
@@ -42,8 +43,17 @@ async function trackInstallation() {
 // Track app open event
 async function trackAppOpen() {
   try {
+    // Don't track app opens if the user is logged in as admin
+    if (isLoggedIn()) {
+      console.log('Admin usage not tracked in analytics');
+      return false;
+    }
+    
     // Get device info
     const deviceInfo = getDeviceInfo();
+    
+    // Add a flag to mark this as a non-admin user
+    deviceInfo.isAdmin = false;
     
     // Save app open event
     await saveStatistic({
@@ -62,12 +72,19 @@ async function trackAppOpen() {
 // Track feature usage
 async function trackFeatureUsage(featureName, additionalData = {}) {
   try {
+    // Don't track feature usage if the user is logged in as admin
+    if (isLoggedIn()) {
+      console.log('Admin feature usage not tracked in analytics');
+      return false;
+    }
+    
     // Save feature usage event
     await saveStatistic({
       type: ANALYTICS_EVENTS.FEATURE_USAGE,
       feature: featureName,
       date: new Date().toISOString(),
-      data: additionalData
+      data: additionalData,
+      isAdmin: false
     });
     
     return true;
@@ -86,7 +103,8 @@ function getDeviceInfo() {
     screenWidth: window.screen.width,
     screenHeight: window.screen.height,
     displayMode: getDisplayMode(),
-    referrer: document.referrer || 'direct'
+    referrer: document.referrer || 'direct',
+    isAdmin: isLoggedIn() // Flag to identify admin usage
   };
 }
 
@@ -112,13 +130,18 @@ async function getAnalyticsData() {
     // Process installation data
     const totalInstallations = installEvents.length;
     
-    // Process app open data
-    const totalAppOpens = appOpenEvents.length;
+    // Filter out admin usage
+    const nonAdminAppOpenEvents = appOpenEvents.filter(event => 
+      !(event.deviceInfo && event.deviceInfo.isAdmin)
+    );
     
-    // Calculate unique users (based on unique device info)
+    // Process app open data (excluding admin usage)
+    const totalAppOpens = nonAdminAppOpenEvents.length;
+    
+    // Calculate unique users (based on unique device info, excluding admin)
     const uniqueDevices = new Set();
-    [...installEvents, ...appOpenEvents].forEach(event => {
-      if (event.deviceInfo && event.deviceInfo.userAgent) {
+    [...installEvents, ...nonAdminAppOpenEvents].forEach(event => {
+      if (event.deviceInfo && event.deviceInfo.userAgent && !event.deviceInfo.isAdmin) {
         uniqueDevices.add(event.deviceInfo.userAgent);
       }
     });
@@ -132,12 +155,12 @@ async function getAnalyticsData() {
       }
     });
     
-    // Calculate app opens by date (last 30 days)
+    // Calculate app opens by date (last 30 days, excluding admin usage)
     const appOpensByDate = {};
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
     
-    appOpenEvents.forEach(event => {
+    nonAdminAppOpenEvents.forEach(event => {
       const date = new Date(event.date);
       if (date >= thirtyDaysAgo) {
         const dateString = date.toISOString().split('T')[0];
@@ -145,9 +168,14 @@ async function getAnalyticsData() {
       }
     });
     
-    // Calculate feature usage
+    // Filter out admin feature usage
+    const nonAdminFeatureUsageEvents = featureUsageEvents.filter(event => 
+      !event.isAdmin
+    );
+    
+    // Calculate feature usage (excluding admin usage)
     const featureUsageCounts = {};
-    featureUsageEvents.forEach(event => {
+    nonAdminFeatureUsageEvents.forEach(event => {
       if (event.feature) {
         featureUsageCounts[event.feature] = (featureUsageCounts[event.feature] || 0) + 1;
       }

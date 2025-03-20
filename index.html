@@ -24,6 +24,7 @@
                 <button data-phase="base">Base Mesocycle</button>
                 <button data-phase="switching">Switching</button>
                 <button data-phase="intense">Intense Mesocycle</button>
+                <button data-phase="stats">Statistics</button>
             </div>
         </header>
         
@@ -115,6 +116,53 @@
                 <p class="workout-instructions">After completing a workout, your set-by-set history will appear directly under the workout in your program view.</p>
                 </div>
             </section>
+            
+            <section id="stats-phase" class="phase-content">
+                <h2>Your Statistics</h2>
+                <div class="stats-container">
+                    <div class="stats-summary">
+                        <h3>Program Summary</h3>
+                        <div id="program-summary" class="summary-card">
+                            <p>Loading program data...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-charts">
+                        <h3>Progress Charts</h3>
+                        <div class="chart-container">
+                            <canvas id="rpe-chart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="completion-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="workout-history">
+                        <h3>Workout History</h3>
+                        <div class="history-filters">
+                            <select id="phase-filter">
+                                <option value="all">All Phases</option>
+                                <option value="intro">Intro</option>
+                                <option value="base">Base</option>
+                                <option value="intense">Intense</option>
+                            </select>
+                            <select id="sort-order">
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                            </select>
+                        </div>
+                        <div id="history-list" class="history-list">
+                            <p>Loading workout history...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="export-section">
+                        <h3>Export Data</h3>
+                        <p>Download your workout data for backup or analysis.</p>
+                        <button id="export-data" class="export-btn">Export to JSON</button>
+                    </div>
+                </div>
+            </section>
         </main>
        
         
@@ -127,7 +175,9 @@
         </footer>
     </div>
 
-    <script src="js/app.js"></script>
+    <script src="js/db.js" type="module"></script>
+    <script src="js/stats.js" type="module"></script>
+    <script src="js/app.js" type="module"></script>
     <script>
         // Register service worker
         if ('serviceWorker' in navigator) {

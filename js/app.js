@@ -1,4 +1,10 @@
 // Smolov Programme Tracker - Main JS
+import {
+  saveWorkout,
+  saveStatistic,
+  migrateFromLocalStorage,
+  getCurrentUser
+} from './db.js';
 
 // Function to round to nearest 0.25kg
 function roundToNearestWeight(weight) {
@@ -7,7 +13,7 @@ function roundToNearestWeight(weight) {
 }
 
 // Save inline workout
-function saveInlineWorkout(inlineTracker, workout) {
+async function saveInlineWorkout(inlineTracker, workout) {
     const workoutId = workout.id;
     
     // Get set data
@@ -38,8 +44,28 @@ function saveInlineWorkout(inlineTracker, workout) {
     // Store set data
     smolovData.workoutData[workoutId] = setData;
     
-    // Save to local storage
+    // Save to local storage (for backward compatibility)
     saveToLocalStorage();
+    
+    // Parse workout ID to get phase, week, and day
+    const idParts = workoutId.split('-');
+    const phase = idParts[0];
+    const week = idParts[1]?.substring(1) || '1'; // Extract number after 'w'
+    const day = idParts[2] || 'unknown';
+    
+    // Create workout record for IndexedDB
+    const workoutRecord = {
+        id: workoutId,
+        date: new Date().toISOString(),
+        phase: phase,
+        week: parseInt(week),
+        day: day,
+        setData: setData,
+        maxSquat: smolovData.maxSquat
+    };
+    
+    // Save to IndexedDB
+    await saveWorkout(workoutRecord);
     
     // Update UI
     const workoutCard = document.querySelector(`.workout-card[data-id="${workoutId}"]`);
@@ -185,7 +211,7 @@ function checkStorageWarning() {
 }
 
 // Initialize App
-function initApp() {
+async function initApp() {
     // App initialization
     
     // Check if running from file and show warning accordingly
@@ -194,12 +220,17 @@ function initApp() {
     // Create workout containers if they don't exist
     createWorkoutContainers();
     
-    // Load data from local storage
-    loadFromLocalStorage();
+    // Load data from local storage and IndexedDB
+    await loadFromLocalStorage();
     
     // If we have data, show the programme
     if (smolovData.maxSquat > 0) {
         maxSquatInput.value = smolovData.maxSquat;
+        
+        // Regenerate the program to ensure all workout cards are created
+        generateProgramme();
+        
+        // Show the programme
         showProgramme();
     }
 }
@@ -235,23 +266,58 @@ function createWorkoutContainers() {
     }
 }
 
-// Save data to local storage
+// Save data to local storage (for backward compatibility)
 function saveToLocalStorage() {
     localStorage.setItem('smolovData', JSON.stringify(smolovData));
 }
 
-// Load data from local storage
-function loadFromLocalStorage() {
+// Load data from local storage and IndexedDB
+async function loadFromLocalStorage() {
+    // First try to load from localStorage for backward compatibility
     const savedData = localStorage.getItem('smolovData');
     if (savedData) {
         smolovData = JSON.parse(savedData);
+        
+        // Attempt to migrate data to IndexedDB if needed
+        await migrateFromLocalStorage();
+    }
+    
+    // Now check if we have data in IndexedDB
+    try {
+        // Get user workouts from IndexedDB
+        const workouts = await getUserWorkouts();
+        
+        // If we have workouts but no maxSquat, try to get it from the first workout
+        if (workouts.length > 0 && (!smolovData.maxSquat || smolovData.maxSquat <= 0)) {
+            smolovData.maxSquat = workouts[0].maxSquat || 0;
+            
+            // If we found a maxSquat, regenerate the program
+            if (smolovData.maxSquat > 0) {
+                // Update completedWorkouts array from IndexedDB data
+                smolovData.completedWorkouts = workouts.map(workout => ({
+                    id: workout.id,
+                    date: workout.date
+                }));
+                
+                // Update workoutData object from IndexedDB data
+                smolovData.workoutData = {};
+                workouts.forEach(workout => {
+                    if (workout.setData) {
+                        smolovData.workoutData[workout.id] = workout.setData;
+                    }
+                });
+                
+                // Save the updated data to localStorage for backward compatibility
+                saveToLocalStorage();
+            }
+        }
+    } catch (error) {
+        console.error('Error loading data from IndexedDB:', error);
     }
 }
 
 // Calculate the Smolov programme based on 1RM
-function calculateProgramme() {
-
-    
+async function calculateProgramme() {
     const maxSquat = parseFloat(maxSquatInput.value);
     
     if (!maxSquat || maxSquat <= 0) {
@@ -269,6 +335,14 @@ function calculateProgramme() {
     
     generateProgramme();
     saveToLocalStorage();
+    
+    // Save program start to statistics
+    await saveStatistic({
+        type: 'program_start',
+        date: smolovData.startDate,
+        maxSquat: smolovData.maxSquat
+    });
+    
     showProgramme();
 }
 
@@ -354,10 +428,6 @@ function generateIntroPhase() {
 
 // Generate the Base Mesocycle
 function generateBasePhase() {
-
-    
-
-    
     // Base mesocycle structure
     const baseStructure = {
         week1: {
@@ -423,10 +493,6 @@ function generateBasePhase() {
 
 // Generate the Intense Mesocycle
 function generateIntensePhase() {
-
-    
-
-    
     // Intense mesocycle structure
     const intenseStructure = {
         week1: {
@@ -453,8 +519,6 @@ function generateIntensePhase() {
             friday: { testWeight: 1.05 }
         }
     };
-    
-
     
     // Loop through each week
     for (let week = 1; week <= 4; week++) {
@@ -640,7 +704,7 @@ function showWorkoutLogger(workout) {
 }
 
 // Save workout results
-function saveWorkoutResults() {
+async function saveWorkoutResults() {
     const workoutId = saveWorkoutBtn.dataset.workoutId;
     
     // Get set data
@@ -669,8 +733,28 @@ function saveWorkoutResults() {
     // Store set data
     smolovData.workoutData[workoutId] = setData;
     
-    // Save to local storage
+    // Save to local storage (for backward compatibility)
     saveToLocalStorage();
+    
+    // Parse workout ID to get phase, week, and day
+    const idParts = workoutId.split('-');
+    const phase = idParts[0];
+    const week = idParts[1]?.substring(1) || '1'; // Extract number after 'w'
+    const day = idParts[2] || 'unknown';
+    
+    // Create workout record for IndexedDB
+    const workoutRecord = {
+        id: workoutId,
+        date: new Date().toISOString(),
+        phase: phase,
+        week: parseInt(week),
+        day: day,
+        setData: setData,
+        maxSquat: smolovData.maxSquat
+    };
+    
+    // Save to IndexedDB
+    await saveWorkout(workoutRecord);
     
     // Update UI
     const workoutCard = document.querySelector(`.workout-card[data-id="${workoutId}"]`);
@@ -716,6 +800,12 @@ function switchPhase() {
     // Update state
     smolovData.currentPhase = phase;
     saveToLocalStorage();
+    
+    // Make sure programme section is visible when switching to workout phases
+    if (phase !== 'stats') {
+        setupSection.classList.add('hidden');
+        programmeSection.classList.remove('hidden');
+    }
 }
 
 // Show the programme
@@ -760,8 +850,24 @@ function showProgramme() {
 }
 
 // Reset app data
-function resetApp() {
+async function resetApp() {
+    // Clear IndexedDB data
+    try {
+        const request = indexedDB.deleteDatabase('smolov-db');
+        request.onsuccess = () => {
+            console.log('Database deleted successfully');
+        };
+        request.onerror = () => {
+            console.error('Error deleting database');
+        };
+    } catch (error) {
+        console.error('Error resetting IndexedDB:', error);
+    }
+    
+    // Clear localStorage
     localStorage.removeItem('smolovData');
+    
+    // Reload the page
     location.reload();
 }
 

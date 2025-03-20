@@ -1,14 +1,17 @@
 // Service Worker for Smolov PWA
 
-const CACHE_NAME = 'smolov-pwa-v1';
+const CACHE_NAME = 'smolov-pwa-v2';
 const assets = [
     './',
     './index.html',
     './css/style.css',
     './js/app.js',
+    './js/db.js',
+    './js/stats.js',
     './manifest.json',
     './images/icon-192x192.svg',
-    './images/icon-512x512.svg'
+    './images/icon-512x512.svg',
+    'https://cdn.jsdelivr.net/npm/chart.js' // For statistics charts
 ];
 
 // Install event

@@ -46,13 +46,12 @@ h1, h2, h3, h4 {
 /* Current 1RM display styling */
 #current-1rm-section {
     margin-bottom: 1.5rem;
+    padding: 0 2rem;
 }
 
 
 .current-max-display h3 {
     color: var(--primary-color);
-    margin-bottom: 0.75rem;
-    font-weight: 600;
 }
 
 .current-max-display p {
@@ -232,7 +231,7 @@ h1 {
     transform: translateY(-2px);
 }
 
-section {
+section:not(#current-1rm-section) {
     background-color: white;
     padding: 2rem;
     border-radius: var(--border-radius);
